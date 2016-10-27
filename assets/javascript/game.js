@@ -1,7 +1,10 @@
+var answered = false;
 var questnum = 0;
 var time=20;
 var correctguesses = 0;
 var counter = null;
+var successaudio = new Audio('assets/images/TaDa-SoundBible.com-1884170640.mp3');
+var failureaudio = new Audio('assets/images/Smashing-Yuri_Santana-1233262689.mp3');
 var trivia = [
 { "question":"Who said 'You must not fight too long with one enemy, or you will teach him all your art of war.'",
 "answers" : ["Napoleon",
@@ -37,25 +40,13 @@ var trivia = [
 }]
 
 
-
-
-
-function randomIntFromInterval(min,max)
-{
-	return Math.floor(Math.random()*(max-min+1)+min);
-}
-
 $(document).ready(function() {
-	// displat the start button only
-	computerRandomNumber = randomIntFromInterval(19,120);
-	$("#randomNbr").text(computerRandomNumber);
-
+	// display the start button only
 	document.getElementById('gameId').style.display = "none";
 
-	
 
-		function checkOutcome() {
-			if(parseInt($("#userScore").text()) === parseInt($("#randomNbr").text())) {
+	function checkOutcome() {
+		if(parseInt($("#userScore").text()) === parseInt($("#randomNbr").text())) {
 			//The player wins if their total score matches the random number from the beginning of the game.		
 			wins++;
 			$("#numWinsId").text(wins);
@@ -73,13 +64,49 @@ $(document).ready(function() {
 
 	function startgame() {
 		// hide the start button
+		questnum = 0;
+		correctguesses = 0;
 		document.getElementById('startId').style.display = "none";
 		document.getElementById('gameId').style.display = "block";
 		displayquestion();
 	}
 
-	function displayImage (msg, cur){
-		$('#gameId').html('<img src='+trivia[questnum].image+ ' width="400px">');
+	function displayImage (correctResponse){
+		if (correctResponse === true) {
+			var div=$('<div>');
+			var p = $('<div>');
+			p.html("You guessed correct!! ");
+			var img = $('<img>');
+			img.attr('src', trivia[questnum].image);
+			img.attr('height', 200);
+			img.attr('width', 200);
+			div.append(p);
+			div.append(img);
+			div.append("<div>"+trivia[questnum].answers[trivia[questnum].correctAns]+"</div>");
+			$('#gameId').html(div);
+			answered = true;
+		}
+		else {
+			var div=$('<div>');
+			var p = $('<div>');
+			p.html("Incorrect !! ");
+			var img = $('<img>');
+			img.attr('src', trivia[questnum].image);
+			img.attr('height', 200);
+			img.attr('width', 200);
+			div.append(p);
+			div.append(img);
+			div.append("<div>"+trivia[questnum].answers[trivia[questnum].correctAns]+"</div>");
+			$('#gameId').html(div);
+			answered =true;
+		}
+		setTimeout (function() {
+			
+			if(answered === true) {
+				nextquestion();
+			}
+		}, 3000);
+		
 	}
 
 	function displayscore() {
@@ -88,123 +115,117 @@ $(document).ready(function() {
 		q += "<br><br>";
 		q += "<div>" + " Score : Correctly guessed " + 
 		correctguesses + " out of " + trivia.length + "</div>";
+		var b = $('<button>');
+		b.attr('class', 'startbutton');
+		b.text('Start Over');
+		//q.append(b);
 		div.html(q);
-	}
-
-	function count(){
-        //increment time by 1, remember we cant use "this" here
-        time--;
-
-        //Get the current time, pass that into the stopwatch.timeConverter function, and save the result in a variable
-        var converted = timeConverter(time);
-        //Use the variable you just created to show the converted time in the "display" div
-        //$("#display").html(converted);
-        $('#timerId').html(converted);
-    }
-
-	function displayquestion() {
-
-		var div = $("#gameId");
-		var stopwatchDiv = "<span id='timerId'>" + "00:00" + "</span>";
-		counter = setInterval(function() {
-            stopwatch.count();
-            console.log("stopwatch started");
-        }, 3000);
-
-
-		var q = "<div>" + "Time Remaining :" + stopwatchDiv + "</div>" ;
-		q += "<div>" +trivia[questnum].question + "</div>";
-		q += "<br><br>";
-		var qId = "question" +  questnum;
-		q += "<ul id='" + qId + "'>";
-		for(var i=0; i < trivia[questnum].answers.length; i++) {
-			var answerId = "answer" + questnum + i;
-			q += "<li id='" + answerId + "'>" + trivia[questnum].answers[i] + "</li>";
+		div.append(b);
+		if(correctguesses === trivia.length) {
+			successaudio.play();
+		}else {
+			failureaudio.play();
 		}
-		q += "</ul>";
-		div.html(q);
+
 	}
 
-	function nextquestion() {
+	function timer() {
+		time--;
 
-		questnum++;
-		
-       //if the count is the same as the length of the image array, reset the count to 0
-       if(questnum === trivia.length) {
-    	//questnum = 0;
-    	//display score
-    	displayscore();
+		var converted = timeConverter(time);
 
-    } else {
+		$('#timerId').html(converted);
 
-    	if (time <= 0) {
-    		clearInterval(counter);
+        //check if time is up
+        if (time <= 0) {
+        	clearInterval(counter);
         	console.log("stopwatch cleared");
-    		time = 20;
-        	$('#timerId').html("00:00");
-    		displayquestion();
-    	};
-
+        	displayImage(false);
+        };
     }
-}
-function timeConverter(t){
+
+    function starttimer(){
+    	console.log("timer started");
+    	time = 20;
+    	$('#timerId').html("00:00");
+    	counter = setInterval(function() {
+    		timer();
+    	}, 1000);
+    }
+
+    function displayquestion() {
+
+    	var div = $("#gameId");
+    	var stopwatchDiv = "<span id='timerId'>" + "00:00" + "</span>";
+    	starttimer();
+    	var q = "<div>" + "Time Remaining :" + stopwatchDiv + "</div>" ;
+    	q += "<div>" +trivia[questnum].question + "</div>";
+    	q += "<br><br>";
+    	var qId = "question" +  questnum;
+    	q += "<ul id='" + qId + "'>";
+    	for(var i=0; i < trivia[questnum].answers.length; i++) {
+    		var answerId = "answer" + questnum + i;
+    		q += "<li id='" + answerId + "'>" + trivia[questnum].answers[i] + "</li>";
+    	}
+    	q += "</ul>";
+    	div.html(q);
+    }
+
+    function nextquestion() {
+    	answered = false;
+    	questnum++;
+    	if(questnum === trivia.length) {
+    		displayscore();
+
+    	} else {
+    		displayquestion();
+    	}
+    }
+
+    function timeConverter(t){
         //This function is done. You do not need to touch it. 
         //It takes the current time in seconds and converts 
         //it to minutes and seconds (mm:ss).
         var minutes = Math.floor(t/60);
         var seconds = t - (minutes * 60);
         if (seconds < 10){
-            seconds = "0" + seconds;
+        	seconds = "0" + seconds;
         }
         if (minutes === 0){
-            minutes = "00";
+        	minutes = "00";
         } else if (minutes < 10){
-            minutes = "0" + minutes;
+        	minutes = "0" + minutes;
         }
 
         return minutes + ":" + seconds;
     }
 
 	//click event for each answer
-
 	$("body").on("click", 'li', function(event) {
         //start a timer
         // $(this).nextAll().css({"color":"red"});
+        answered = true;
         var result = false;
         $(this).css({"color":"red"});
+        
         clearInterval(counter);
+        console.log("stopwatch cleared");
+
         if(parseInt($(this).attr('id')[$(this).attr('id').length-1]) === trivia[questnum].correctAns) {
         	result = true;
         }
 
-        setTimeout (function() {
-		// check outcome 
-
-		// if correct answer 
-
-		// display "you win" increment wins and the answer for 5 sec then return
- 		//Use a setTimeout to run displayImage after 3 second
-    	//or
-    	// display "you loose" increment losses and the answer for 5 sec then return
- 		//Use a setTimeout to run displayImage after 3 second
- 		//var cur = $(this).data("value");
- 		//console.log($(this).attr('id'));
- 		if (result === true) {
- 			correctguesses++;
- 		}
- 		clearInterval(counter);
-        console.log("stopwatch cleared");
-    	time = 20;
-        $('#timerId').html("00:00");
- 		displayImage();
- 	}, 3000);
-        nextquestion();
+        if (result === true) {
+        	correctguesses++;
+        	displayImage(true);
+        }else {
+        	displayImage(false);
+        }
     });
 
 	//click event for start button
-	$("#startId").on("click", function(event) {
-        //start the game
-        startgame();
-    });
+	$("body").on("click", '.startbutton', function(event) {
+		startgame();
+	});
 
 });
